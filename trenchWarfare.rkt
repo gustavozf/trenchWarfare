@@ -33,6 +33,8 @@
 
 ; Definicao do primeiro turno
 (define jogada (turno 1 2))
+; Numero de turnos realizados
+(define num-turnos 0)
 ; Guarda as posicoes das explosoes
 (define explosoes empty)
 
@@ -196,6 +198,10 @@
   )
 
 ; ============================================================================
+(define (end-game?) ;--------------------------------------------------------------------PAREI AQUI
+  ()
+  )
+
 ; Fecha a tela inicial e mostra a tela do jogo
 (define (begin-action)
   (send frame-inicial show #f)
@@ -233,7 +239,8 @@
   (cond [(= jogador1 1)
          (posiciona-desenho boom (player-action player1))]
         [else (posiciona-desenho boom (player-action player2))])
-  
+
+  (add1 num-turnos) ; Aumenta o numero de turnos jogados
   (set! jogada (turno (turno-jogador2 jogada) (turno-jogador1 jogada)))
   (send frame-jogo show #t)
   
@@ -329,9 +336,11 @@
      ]
     )
   )
-(define (valid-esquiva? player coluna)
+(define (valid-esquiva? player linha coluna)
+  (define line (string->number (send linha get-value)))
   (define column (string->number (send coluna get-value)))
   (cond
+    [(not (and (< line 7) (< column 9))) #f]
     [(= player 1)
      (cond
        [(> (ponto-x (player-trincheira player1)) column)
@@ -367,7 +376,7 @@
        [label "Confirmar"]
        [callback (λ (button event)
                    (cond
-                     [(valid-esquiva? num coluna2)
+                     [(valid-esquiva? num linha2 coluna2)
                       (change-posicao num linha2 coluna2)
                       (send dialog-correr show #f)
                       ]
