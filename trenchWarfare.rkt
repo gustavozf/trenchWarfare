@@ -2,16 +2,20 @@
 (require racket/gui)
 
 ; Definicao de Dados e Estruturas
+; Estrutura ponto, para desenhar no mapa e realizar ações
 (struct ponto (x y))
+; Estrutura turno, para revesar os turnos dos jogadores
 (struct turno (jogador1 jogador2))
-
+; Estrutura do jogado
 (struct player (nome
-                posicao
-                action
-                lvl
-                trincheira
+                posicao ; Posicao dele no mapa
+                action ; Guarda a posicao das bombas jogadas
+                lvl ; Guarda o nivel dele
+                trincheira ; Guarda a posicao da trincheira do jogador
                 ))
+; Guarda o nomero de jogadores (1 ou 2)
 (define num-jogadores 0)
+; Definicao dos dois players
 (define player1 (player
                  "Player 1"
                  (ponto 0 3)
@@ -26,19 +30,20 @@
                  0
                  (ponto 7 0)
                  ))
-(define ataque (ponto 0 0))
-(define esquiva (ponto 0 0))
+
+; Definicao do primeiro turno
 (define jogada (turno 1 2))
+; Guarda as posicoes das explosoes
 (define explosoes empty)
 
 ; Imagens utilizadas
-(define tela-inicial (read-bitmap "./bg2.png"))
-(define grass (read-bitmap "./grassGrid2.png"))
-(define trincheira (read-bitmap "./arame2.png"))
-(define bandeira (read-bitmap "./doende.png"))
-(define plr1 (read-bitmap "./plr1.png"))
-(define plr2 (read-bitmap "./plr2.png"))
-(define boom (read-bitmap "./boom.png"))
+(define tela-inicial (read-bitmap "./bg2.png")) ; Background da tela inicial
+(define grass (read-bitmap "./grassGrid2.png")) ; Grama da tela de jogo
+(define trincheira (read-bitmap "./arame2.png")) ; Trincheira
+(define bandeira (read-bitmap "./doende.png")) ; Bandeira
+(define plr1 (read-bitmap "./plr1.png")) ; Imagem Player 1
+(define plr2 (read-bitmap "./plr2.png")) ; Imagem Player 2
+(define boom (read-bitmap "./boom.png")) ; Imagem explosão
 
 ; ========================================================= Frames
 ; Definicao da Tela Inicial (frame)
@@ -50,7 +55,7 @@
 (new canvas% [parent frame-inicial]
              [paint-callback
               (lambda (canvas dc)
-                (send dc draw-bitmap tela-inicial 0 0)
+                (send dc draw-bitmap tela-inicial 0 0) ; Desenha o background
               )]
              )
 
@@ -97,6 +102,7 @@
                  (seleciona-nomes))])
   )
 
+; Cria caixa que pede o numero de jogadores
 (define dialog (instantiate dialog% ("Número de Jogadores")
                  [width 300]))
 (new message% [parent dialog] [label "Escolha o número de jogadores!"])
@@ -174,6 +180,7 @@
                    )])
   )
 
+; Chama as janelas
 (define (seleciona-nomes)
   ;Cria caixa para a selecao de nomes
   (define dialog-nomes (instantiate dialog% ("Nome dos Jogadores")
@@ -210,16 +217,17 @@
   (define jogador1 (turno-jogador1 jogada))
   (define jogador2 (turno-jogador2 jogada))
   
-  (movimento jogador1 jogador2)
+  (movimento jogador1 jogador2) ; Pede movimento dos dois jogadores
   (cond
-    [(check-acerto? jogador1 jogador2)
-     (move-trench jogador1)
+    [(check-acerto? jogador1 jogador2) ; Confere se o jogador acertou o outro
+     (move-trench jogador1) ; Caso sim, anda com a trincheira
      (printf "Acerto!")
      ]
     [else
      (printf "Errou!")
      ]
     )
+  ; Fecha o frame do jogo, atualiza e abre novamente
   (send frame-jogo show #f)
   (setup-play)
   (cond [(= jogador1 1)
@@ -233,7 +241,7 @@
 
 
 ; ============================================================= Desenhar
-
+; Desenha o nome dos players nas laterais
 (define (desenha-nome-players)
   (send dc-jogo set-scale 1 1)
   (send dc-jogo set-text-foreground "white")
@@ -242,18 +250,22 @@
   (send dc-jogo set-text-foreground "white")
   (send dc-jogo draw-text (player-nome player2) 425 345 #t 0 1.57))
 
+; Funcao que desenha um trincheira
 (define (posiciona-trincheira ponto)
     (send dc-jogo draw-bitmap trincheira (* (ponto-x ponto) 50) (* (ponto-y ponto) 50))
   )
 
+; Funcao generica de desenho em um ponto
 (define (posiciona-desenho desenho ponto)
   (send dc-jogo draw-bitmap desenho (* (ponto-x ponto) 50) (* (ponto-y ponto) 50)))
 
+; Desenha os players
 (define (posicao-inicial-players)
   (posiciona-desenho plr1 (player-posicao player1))
   (posiciona-desenho plr2 (player-posicao player2))
   )
 
+; Desenha a bandeira/Doende
 (define (desenha-bandeiras)
   ;(posiciona-desenho bandeira (ponto 4 0))
   ;(posiciona-desenho bandeira (ponto 4 2))
@@ -269,7 +281,7 @@
        [label texto]
        [init-value "0"])
   )
-
+; Realiza um update da posicao no jogador
 (define (change-posicao jogador coluna2 linha2) 
   (cond
     [(= jogador 1)
@@ -293,7 +305,7 @@
      ]
     )
   )
-
+; Realiza update na ação do jogador
 (define (change-action jogador coluna1 linha1)
   (cond
     [(= jogador 1)
@@ -317,11 +329,27 @@
      ]
     )
   )
+(define (valid-esquiva? player coluna)
+  (define column (string->number (send coluna get-value)))
+  (cond
+    [(= player 1)
+     (cond
+       [(> (ponto-x (player-trincheira player1)) column)
+        #t]
+       [else #f])]
+    [else
+     (cond
+       [(< (ponto-x (player-trincheira player2)) column)
+        #t]
+       [else #f])]
+    )
+  )
 
+; Funcao que leva o jogador a escolher um lugar para esquivar-se
 (define (action-correr num)
   (define dialog-correr (instantiate dialog% ("Correr")
-                             [width 200]
-                         ))
+                          [width 200]
+                          ))
   (define nome "")
   (cond
     [(= num 1) (set! nome (player-nome player1))]
@@ -333,19 +361,27 @@
   (define linha2 (campos-coordenadas dialog-correr "Insira uma linha"))
   (define coluna2 (campos-coordenadas dialog-correr "Insira uma coluna"))
   (define panel-correr (new horizontal-panel% [parent dialog-correr]
-                     [alignment '(center center)]))
+                            [alignment '(center center)]))
   (new button%
-     [parent panel-correr]
-     [label "Confirmar"]
-     [callback (λ (button event)
-                 (change-posicao num linha2 coluna2)
-                 ;(set! esquiva (ponto (string->number (send linha2 get-value)) (string->number (send coluna2 get-value))))
-                 (send dialog-correr show #f)
-                 )])
-
+       [parent panel-correr]
+       [label "Confirmar"]
+       [callback (λ (button event)
+                   (cond
+                     [(valid-esquiva? num coluna2)
+                      (change-posicao num linha2 coluna2)
+                      (send dialog-correr show #f)
+                      ]
+                     [else
+                      (send dialog-correr show #f)
+                      (send dialog-correr show #t)
+                      ]
+                     
+                     ))])
+  
+  
   (send dialog-correr show #t)
   )
-
+; Funcao que leva o jogador a escolher um lugar para atacar
 (define (action-atacar num)
   (define dialog-atacar (instantiate dialog% ("Atacar")
                           [width 200]
@@ -367,19 +403,20 @@
        [label "Confirmar"]
        [callback (λ (button event)
                    (change-action num linha1 coluna1)
-                   ;(set! ataque (ponto (string->number(send linha1 get-value)) (string->number (send coluna1 get-value))))
                    (send dialog-atacar show #f)
                    )])
   
   (send dialog-atacar show #t)
   )
 
+; Chama as duas funcoes de atacar/correr
 (define (movimento jogador1 jogador2)
   (action-atacar jogador1)
   (action-correr jogador2)
   )
 
 ; =========================================================== Ações colisao
+; Verifica se o jogador 1 acertou o outro
 (define (check-acerto? jogador1 jogador2)
   (define atacante empty)
   (define defensor empty)
@@ -402,6 +439,7 @@
       )
   )
 
+; Move a trincheira uma posicao pra frente
 (define (move-trench jogAux)
   (define jogador empty)
   (cond [(= jogAux 1)
