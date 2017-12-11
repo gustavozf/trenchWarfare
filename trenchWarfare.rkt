@@ -20,14 +20,14 @@
                  "Player 1"
                  (ponto 0 3)
                  (ponto 0 0)
-                 0
+                 1
                  (ponto 1 0)
                  ))
 (define player2 (player
                  "Player 2"
                  (ponto 8 3)
                  (ponto 0 0)
-                 0
+                 1
                  (ponto 7 0)
                  ))
 
@@ -63,8 +63,8 @@
 
 (new button%
      [parent frame-inicial]
-     [label "Começar!"]
-     [callback (λ (button event) (send dialog show #t))])
+     [label "Começar"]
+     [callback (λ (button event) (seleciona-nomes))]) ;(send dialog show #t))])
 
 ; Definicao da Tela de Jogo (frame)
 (define frame-jogo (new frame%
@@ -94,10 +94,10 @@
 
 ; ========================================== Telas de Inicio ====================
 ; Cria caixa de selecao do numero de jogadores
-(define (botao-num-players num)
+(define (botao-num-players num text)
   (new button%
      [parent panel]
-     [label (number->string num)]
+     [label text];(number->string num)]
      [callback (λ (button event)
                  (set! num-jogadores num)
                  (send dialog show #f)
@@ -105,14 +105,14 @@
   )
 
 ; Cria caixa que pede o numero de jogadores
-(define dialog (instantiate dialog% ("Número de Jogadores")
+(define dialog (instantiate dialog% ("Jogadores")
                  [width 300]))
-(new message% [parent dialog] [label "Escolha o número de jogadores!"])
+(new message% [parent dialog] [label "Escolha o tipo de jogadores"]);"Escolha o número de jogadores"])
 (define panel (new horizontal-panel% [parent dialog]
                                      [alignment '(center center)]))
 
-(botao-num-players 1)
-(botao-num-players 2)
+(botao-num-players 1 "AI")
+(botao-num-players 2 "Físicos")
 
 (when (system-position-ok-before-cancel?)
   (send panel change-children reverse))
@@ -126,29 +126,6 @@
        [init-value num])
   )
 
-; Janela para 1 nome
-(define (janela-nome1 dialog-nomes)
-  (define botao1 (botao-nomes "Player 1" dialog-nomes))
-
-   (define panel-nomes (new horizontal-panel% [parent dialog-nomes]
-                     [alignment '(center center)]))
-
-  (new button%
-       [parent panel-nomes]
-       [label "Confirmar!"]
-       [callback (λ (button event)
-                   (set! player1
-                         (player
-                          (send botao1 get-value)
-                          (player-posicao player1)
-                          (player-action player1)
-                          (player-lvl player1)
-                          ))
-                   (send dialog-nomes show #f)
-                   (begin-action)
-                   )])
-  )
-
 ; Janela para 2 nomes
 (define (janela-nome2 dialog-nomes)
   (define botao1 (botao-nomes "Player 1" dialog-nomes))
@@ -159,7 +136,7 @@
   
   (new button%
        [parent panel-nomes]
-       [label "Confirmar!"]
+       [label "Confirmar"]
        [callback (λ (button event)
                    (set! player1
                          (player
@@ -190,7 +167,7 @@
                          ))
   
   (cond
-    [(= num-jogadores 1) (janela-nome1 dialog-nomes)]
+    [(= num-jogadores 1) (ai)];(janela-nome1 dialog-nomes)]
     [else (janela-nome2 dialog-nomes)]
     )
 
@@ -198,8 +175,32 @@
   )
 
 ; ============================================================================
-(define (end-game?) ;--------------------------------------------------------------------PAREI AQUI
-  ()
+(define (end-game num)
+  (define dialog-winner (instantiate dialog% ("Fim de Jogo!")
+                         [width 300]
+                         ))
+  (new message% [parent dialog-winner] [label "O Vencedor da rodada foi: "])
+  (cond
+    [(= num 1)
+     (new message% [parent dialog-winner] [label (player-nome player1)])
+     ]
+    [(= num 2)
+     (new message% [parent dialog-winner] [label (player-nome player2)])]
+    )
+
+  (new message% [parent dialog-winner] [label "Turnos para a vitória: "])
+  (new message% [parent dialog-winner] [label (number->string num-turnos)])
+  (new button%
+     [parent dialog-winner]
+     [label "Jogar Novamente"]
+     [callback
+      (λ (button event)
+        (send dialog-winner show #f)
+        (inicio)
+        )
+      ]
+     )
+  (send dialog-winner show #t)
   )
 
 ; Fecha a tela inicial e mostra a tela do jogo
@@ -240,10 +241,14 @@
          (posiciona-desenho boom (player-action player1))]
         [else (posiciona-desenho boom (player-action player2))])
 
-  (add1 num-turnos) ; Aumenta o numero de turnos jogados
-  (set! jogada (turno (turno-jogador2 jogada) (turno-jogador1 jogada)))
-  (send frame-jogo show #t)
-  
+  (set! num-turnos (add1 num-turnos)) ; Aumenta o numero de turnos jogados
+  (cond
+    [(= (player-lvl player1) 4) (end-game 1)]
+    [(= (player-lvl player2) 4) (end-game 2)]
+    [else 
+    (set! jogada (turno (turno-jogador2 jogada) (turno-jogador1 jogada)))
+    (send frame-jogo show #t)]
+    )
   )
 
 
@@ -462,7 +467,7 @@
                           (player-nome player1)
                           (player-posicao player1)
                           (player-action player1)
-                          (player-lvl player1)
+                          (add1 (player-lvl player1))
                           (ponto (add1 (ponto-x (player-trincheira player1))) (ponto-y (player-trincheira player1)))
                           ))]
     [else
@@ -471,10 +476,14 @@
                           (player-nome player2)
                           (player-posicao player2)
                           (player-action player2)
-                          (player-lvl player2)
+                          (add1 (player-lvl player2))
                           (ponto (sub1 (ponto-x (player-trincheira player2))) (ponto-y (player-trincheira player2)))
                           ))]
     )
+  )
+; ============================================================ AI PLAYERS
+(define (ai)
+  (printf "AI")
   )
 
 ; =========================================================== Inicio
