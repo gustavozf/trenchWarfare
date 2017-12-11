@@ -371,7 +371,7 @@
     )
   
   (new message% [parent dialog-correr] [label nome])
-  (new message% [parent dialog-correr] [label "Sua vez de correr!"])
+  (new message% [parent dialog-correr] [label "\t    As bombas estão a caminho!\nEscolha uma posição para se esconder!"])
   (define linha2 (campos-coordenadas dialog-correr "Insira uma linha"))
   (define coluna2 (campos-coordenadas dialog-correr "Insira uma coluna"))
   (define panel-correr (new horizontal-panel% [parent dialog-correr]
@@ -407,7 +407,7 @@
     [else (set! nome (player-nome player2))]
     )
   (new message% [parent dialog-atacar] [label nome])
-  (new message% [parent dialog-atacar] [label "Sua vez de atacar!"])
+  (new message% [parent dialog-atacar] [label "\t\t\t  Sua vez de atacar!\nEscolha uma posição para bombardear!"])
   (define linha1 (campos-coordenadas dialog-atacar "Insira uma linha"))
   (define coluna1 (campos-coordenadas dialog-atacar "Insira uma coluna"))
   (define panel-atacar (new horizontal-panel% [parent dialog-atacar]
@@ -481,11 +481,8 @@
                           ))]
     )
   )
-; ============================================================ AI PLAYERS
-(define (ai)
-  (printf "AI")
-  )
-
+; ==========================================================
+(define (ai) (printf "Nao foi dessa vez"))
 ; =========================================================== Inicio
 (define (inicio)
   (send frame-inicial show #t)

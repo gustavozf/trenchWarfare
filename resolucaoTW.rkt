@@ -52,7 +52,16 @@
                                (ponto 5 8)
                                ))
 
-
+(define (amplia-lista lista y)
+  (append lista (list
+                 (ponto 0 y)
+                 (ponto 1 y)
+                 (ponto 2 y)
+                 (ponto 3 y)
+                 (ponto 4 y)
+                 (ponto 5 y)
+                 ))
+  )
 
 ; Acoes do player 2 -> Totalmente randomicas
 (define (random-element list)
@@ -79,25 +88,39 @@
     )
   )
 
-(define (jogo)
+(define (resolve-1)
+  (set! num-turnos (add1 num-turnos))
   (cond
     [(hit? (player2-correr) (player1-atacar))
      (set! player1 (player
                     (player-nome player1)
                     (add1 (player-lvl player1))
-                    (player-trincheira player1)))])
+                    (ponto (add1 (ponto-x (player-trincheira player1))) 0)))
+      (amplia-lista movimentos-possiveis1 (ponto-x (player-trincheira player1)))
+     ])
   (cond
-    [(= (player-lvl player1) 4) (printf "Player1 Ganhou!\n")]
+    [(= (player-lvl player1) 4)
+     (printf "Player1 Ganhou!\n")
+     (printf "Numero de turnos: ")
+     (display num-turnos)
+     ]
     [else
+     (set! num-turnos (add1 num-turnos))
      (cond
        [(hit? (player1-correr) (player2-atacar))
         (set! player2 (player
                        (player-nome player2)
                        (add1 (player-lvl player2))
-                       (player-trincheira player2)))])
+                       (ponto (sub1 (ponto-x (player-trincheira player2))) 0)))
+        (amplia-lista movimentos-possiveis2 (ponto-x (player-trincheira player2)))
+        ])
      (cond
-       [(= (player-lvl player2) 4) (printf "Player2 Ganhou!\n")]
+       [(= (player-lvl player2) 4)
+        (printf "Player2 Ganhou!\n")
+        (printf "Numero de turnos: ")
+        (display num-turnos)
+        ]
        [else
-        (jogo)])]))
+        (resolve-1)])]))
 
-(jogo)
+(resolve-1)
